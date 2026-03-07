@@ -1,7 +1,16 @@
 package com.anushka.taskmanager.model;
 
+<<<<<<< HEAD
 import jakarta.persistence.*;
 import java.time.LocalDate;
+=======
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+>>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
 
 @Entity
 @Table(name = "tasks")
@@ -11,12 +20,17 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+<<<<<<< HEAD
+=======
+    @Column(nullable = false)
+>>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
     private String title;
 
     private String description;
 
     private boolean completed;
 
+<<<<<<< HEAD
     private LocalDate dueDate;
 
     @Enumerated(EnumType.STRING)
@@ -29,6 +43,19 @@ public class Task {
     public Task() {
     }
 
+=======
+    // Constructors
+    public Task() {
+    }
+
+    public Task(String title, String description, boolean completed) {
+        this.title = title;
+        this.description = description;
+        this.completed = completed;
+    }
+
+    // Getters and Setters
+>>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
     public Long getId() {
         return id;
     }
@@ -56,6 +83,7 @@ public class Task {
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
+<<<<<<< HEAD
 
     public LocalDate getDueDate() {
         return dueDate;
@@ -80,4 +108,6 @@ public class Task {
     public void setUser(User user) {
         this.user = user;
     }
+=======
+>>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
 }
