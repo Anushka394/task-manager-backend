@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.anushka.taskmanager.exception.ResourceNotFoundException;
 import com.anushka.taskmanager.model.Priority;
 import com.anushka.taskmanager.model.Task;
 import com.anushka.taskmanager.repository.TaskRepository;
@@ -20,13 +21,19 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
+    public Task getTaskById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+    }
+
     public Task createTask(Task task) {
         return taskRepository.save(task);
     }
 
     public Task updateTask(Long id, Task updatedTask) {
 
-        Task task = taskRepository.findById(id).orElseThrow();
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         task.setTitle(updatedTask.getTitle());
         task.setDescription(updatedTask.getDescription());
@@ -38,7 +45,9 @@ public class TaskService {
     }
 
     public void deleteTask(Long id) {
-        taskRepository.deleteById(id);
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        taskRepository.delete(task);
     }
 
     public List<Task> getTasksByPriority(Priority priority) {
