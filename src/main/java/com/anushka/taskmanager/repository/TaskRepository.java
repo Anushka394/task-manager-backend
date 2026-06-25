@@ -1,6 +1,5 @@
 package com.anushka.taskmanager.repository;
 
-<<<<<<< HEAD
 import java.time.LocalDate;
 import java.util.List;
 
@@ -8,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.anushka.taskmanager.model.Task;
 import com.anushka.taskmanager.model.Priority;
+import com.anushka.taskmanager.model.User;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
@@ -16,13 +16,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByCompletedTrue();
 
     List<Task> findByDueDateBefore(LocalDate date);
-=======
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-import com.anushka.taskmanager.model.Task;
+    // User-scoped queries
+    List<Task> findByUser(User user);
 
-@Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+    List<Task> findByUserAndCompletedTrue(User user);
+
+    List<Task> findByUserAndPriority(User user, Priority priority);
 }
