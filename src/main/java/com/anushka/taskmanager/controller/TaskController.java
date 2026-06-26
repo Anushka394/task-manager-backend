@@ -1,145 +1,67 @@
 package com.anushka.taskmanager.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-<<<<<<< HEAD
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.anushka.taskmanager.dto.request.TaskRequest;
+import com.anushka.taskmanager.dto.response.TaskResponse;
 import com.anushka.taskmanager.model.Priority;
-import com.anushka.taskmanager.model.Task;
 import com.anushka.taskmanager.service.TaskService;
-=======
-import org.springframework.web.bind.annotation.RestController;
-
-import com.anushka.taskmanager.model.Task;
-import com.anushka.taskmanager.repository.TaskRepository;
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
+    private static final Logger log = LoggerFactory.getLogger(TaskController.class);
+    private final TaskService taskService;
+    public TaskController(TaskService taskService) { this.taskService = taskService; }
 
-    @Autowired
-<<<<<<< HEAD
-    private TaskService taskService;
-=======
-    private TaskRepository taskRepository;
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
-
-    // Get all tasks
     @GetMapping
-    public List<Task> getAllTasks() {
-<<<<<<< HEAD
-        return taskService.getAllTasks();
-=======
-        return taskRepository.findAll();
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+    public ResponseEntity<List<TaskResponse>> getAllTasks(
+            @RequestParam(required = false) Boolean completed,
+            @RequestParam(required = false) Priority priority) {
+        List<TaskResponse> tasks;
+        if (Boolean.TRUE.equals(completed))       tasks = taskService.getCompletedTasks();
+        else if (Boolean.FALSE.equals(completed)) tasks = taskService.getPendingTasks();
+        else if (priority != null)                tasks = taskService.getTasksByPriority(priority);
+        else                                      tasks = taskService.getAllTasks();
+        return ResponseEntity.ok(tasks);
     }
 
-    // Get task by ID
     @GetMapping("/{id}")
-    public Task getTaskById(@PathVariable Long id) {
-<<<<<<< HEAD
-        return taskService.getAllTasks().stream()
-                .filter(task -> task.getId().equals(id))
-                .findFirst()
-=======
-        return taskRepository.findById(id)
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+    public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.getTask(id));
     }
 
-    // Create new task
     @PostMapping
-    public Task createTask(@RequestBody Task task) {
-<<<<<<< HEAD
-        return taskService.createTask(task);
-=======
-        return taskRepository.save(task);
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskRequest request) {
+        log.info("POST /api/tasks title='{}'", request.getTitle());
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(request));
     }
 
-    // Update task
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody Task updatedTask) {
-<<<<<<< HEAD
-        return taskService.updateTask(id, updatedTask);
-=======
-
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-
-        task.setTitle(updatedTask.getTitle());
-        task.setDescription(updatedTask.getDescription());
-        task.setCompleted(updatedTask.isCompleted());
-
-        return taskRepository.save(task);
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+    public ResponseEntity<TaskResponse> updateTask(@PathVariable Long id,
+                                                   @Valid @RequestBody TaskRequest request) {
+        return ResponseEntity.ok(taskService.updateTask(id, request));
     }
 
-    // Delete task
-    @DeleteMapping("/{id}")
-    public String deleteTask(@PathVariable Long id) {
-<<<<<<< HEAD
-        taskService.deleteTask(id);
-=======
-
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-
-        taskRepository.delete(task);
-
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
-        return "Task deleted successfully";
-    }
-
-    // Mark task as completed
     @PatchMapping("/{id}/complete")
-    public Task markCompleted(@PathVariable Long id) {
-<<<<<<< HEAD
-        Task task = taskService.getAllTasks().stream()
-                .filter(t -> t.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-        
-        task.setCompleted(true);
-        return taskService.updateTask(id, task);
+    public ResponseEntity<TaskResponse> markCompleted(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.completeTask(id));
     }
 
-    // Get tasks by priority
-    @GetMapping("/priority/{priority}")
-    public List<Task> getTasksByPriority(@PathVariable Priority priority) {
-        return taskService.getTasksByPriority(priority);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        log.info("DELETE /api/tasks/{}", id);
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // Get completed tasks
-    @GetMapping("/completed")
-    public List<Task> getCompletedTasks() {
-        return taskService.getCompletedTasks();
-    }
-
-    // Get overdue tasks
     @GetMapping("/overdue")
-    public List<Task> getOverdueTasks() {
-        return taskService.getOverdueTasks();
-=======
-
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-
-        task.setCompleted(true);
-
-        return taskRepository.save(task);
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+    public ResponseEntity<List<TaskResponse>> getOverdueTasks() {
+        return ResponseEntity.ok(taskService.getOverdueTasks());
     }
 }

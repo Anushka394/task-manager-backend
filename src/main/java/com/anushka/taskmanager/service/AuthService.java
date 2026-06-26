@@ -1,62 +1,60 @@
 package com.anushka.taskmanager.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import com.anushka.taskmanager.dto.LoginRequest;
-import com.anushka.taskmanager.dto.RegisterRequest;
+import com.anushka.taskmanager.dto.request.LoginRequest;
+import com.anushka.taskmanager.dto.request.RegisterRequest;
+import com.anushka.taskmanager.dto.response.AuthResponse;
+import com.anushka.taskmanager.exception.DuplicateEmailException;
 import com.anushka.taskmanager.model.User;
 import com.anushka.taskmanager.repository.UserRepository;
+import com.anushka.taskmanager.security.JwtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    private final BCryptPasswordEncoder legacyBcrypt = new BCryptPasswordEncoder();
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       JwtService jwtService, AuthenticationManager authenticationManager,
+                       UserDetailsService userDetailsService) {
+        this.userRepository = userRepository; this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService; this.authenticationManager = authenticationManager;
+        this.userDetailsService = userDetailsService;
+    }
 
-    public User register(RegisterRequest request) {
-        // Check if user already exists
-        if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new RuntimeException("User already exists with this email");
-        }
-
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail()))
+            throw new DuplicateEmailException(request.getEmail());
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        return userRepository.save(user);
+        userRepository.save(user);
+        log.info("Registered user id={} email={}", user.getId(), user.getEmail());
+        UserDetails ud = userDetailsService.loadUserByUsername(user.getEmail());
+        return new AuthResponse(jwtService.generateToken(ud), user.getEmail(), user.getName());
     }
 
-    public User login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail());
-        
-        if (user == null) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
-        if (!isPasswordValid(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
-        return user;
-    }
-
-    private boolean isPasswordValid(String rawPassword, String storedPassword) {
-        if (storedPassword == null || storedPassword.isBlank()) {
-            return false;
-        }
-
-        if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
-            return legacyBcrypt.matches(rawPassword, storedPassword);
-        }
-
-        return passwordEncoder.matches(rawPassword, storedPassword);
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        UserDetails ud = userDetailsService.loadUserByUsername(user.getEmail());
+        log.info("Login success user id={}", user.getId());
+        return new AuthResponse(jwtService.generateToken(ud), user.getEmail(), user.getName());
     }
 }
