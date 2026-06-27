@@ -31,12 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
-<<<<<<< HEAD
 
-# Local build caches and logs
+### Local build caches and logs ###
 .m2home/
 .m2repo/
 .mvn-local-settings.xml
 run-*.log
-=======
->>>>>>> 438f23f07e9de93a71c7682bf098a97a3f854a55
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env*.local

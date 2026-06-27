@@ -1,6 +1,8 @@
 package com.anushka.taskmanager.controller;
 
+import com.anushka.taskmanager.dto.request.PriorityUpdateRequest;
 import com.anushka.taskmanager.dto.request.TaskRequest;
+import com.anushka.taskmanager.dto.response.PagedResponse;
 import com.anushka.taskmanager.dto.response.TaskResponse;
 import com.anushka.taskmanager.model.Priority;
 import com.anushka.taskmanager.service.TaskService;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -17,18 +20,32 @@ import java.util.List;
 public class TaskController {
     private static final Logger log = LoggerFactory.getLogger(TaskController.class);
     private final TaskService taskService;
-    public TaskController(TaskService taskService) { this.taskService = taskService; }
 
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
+    /**
+     * GET /api/tasks
+     * Optional filters: completed=true|false, priority=LOW|MEDIUM|HIGH
+     * Pagination: page (0-based), size, sortBy, direction (asc|desc)
+     */
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getAllTasks(
+    public ResponseEntity<PagedResponse<TaskResponse>> getAllTasks(
             @RequestParam(required = false) Boolean completed,
-            @RequestParam(required = false) Priority priority) {
-        List<TaskResponse> tasks;
-        if (Boolean.TRUE.equals(completed))       tasks = taskService.getCompletedTasks();
-        else if (Boolean.FALSE.equals(completed)) tasks = taskService.getPendingTasks();
-        else if (priority != null)                tasks = taskService.getTasksByPriority(priority);
-        else                                      tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+            @RequestParam(required = false) Priority priority,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        PagedResponse<TaskResponse> result;
+        if (Boolean.TRUE.equals(completed))       result = taskService.getCompletedTasks(page, size, sortBy, direction);
+        else if (Boolean.FALSE.equals(completed)) result = taskService.getPendingTasks(page, size, sortBy, direction);
+        else if (priority != null)                result = taskService.getTasksByPriority(priority, page, size, sortBy, direction);
+        else                                      result = taskService.getAllTasks(page, size, sortBy, direction);
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")
@@ -51,6 +68,12 @@ public class TaskController {
     @PatchMapping("/{id}/complete")
     public ResponseEntity<TaskResponse> markCompleted(@PathVariable Long id) {
         return ResponseEntity.ok(taskService.completeTask(id));
+    }
+
+    @PatchMapping("/{id}/priority")
+    public ResponseEntity<TaskResponse> updatePriority(@PathVariable Long id,
+                                                       @Valid @RequestBody PriorityUpdateRequest request) {
+        return ResponseEntity.ok(taskService.updatePriority(id, request));
     }
 
     @DeleteMapping("/{id}")
