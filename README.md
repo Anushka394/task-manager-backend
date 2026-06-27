@@ -1,73 +1,123 @@
-# Task Manager API
+# Task Manager
 
-Spring Boot based REST API for managing tasks with user authentication.
+A full stack task management application built with Spring Boot and React.
+
+**Live Application:** https://task-manager-backend-one-wheat.vercel.app  
+**API:** https://task-manager-backend-3rq7.onrender.com
+
+---
+
+## Overview
+
+Users can register an account, log in, and manage their personal tasks. Each task supports a title, description, due date, and priority level. The application is secured with JWT authentication — every user only sees and manages their own tasks.
+
+---
 
 ## Features
-- User registration and login
-- CRUD operations for tasks
-- Task filtering by priority, completion status, and due date
-- Password encryption with BCrypt
-- HTTP Basic Authentication
+
+- User registration and login with JWT authentication
+- Create, edit, and delete tasks
+- Set priority levels: Low, Medium, High
+- Set due dates with automatic overdue detection
+- Filter tasks by status (pending / completed) or priority
+- Mark tasks as complete
+- Paginated task list
+- Dashboard with task count stats
+
+---
 
 ## Tech Stack
-- Spring Boot 4.0.3
+
+**Backend**
 - Java 17
-- MySQL
-- Spring Security
+- Spring Boot 3.2
+- Spring Security with JWT (JJWT)
 - Spring Data JPA
+- H2 in-memory database
 - Maven
 
-## Setup
+**Frontend**
+- React 19 with TypeScript
+- Vite
+- Tailwind CSS
+- TanStack Query (React Query)
+- React Hook Form with Zod validation
+- Axios
+- React Router
 
-1. Create MySQL database:
-```sql
-CREATE DATABASE task_manager;
-```
+**Deployment**
+- Backend: Render (Docker)
+- Frontend: Vercel
 
-2. Update `application.properties` with your MySQL credentials
-
-3. Run the application:
-```bash
-./mvnw spring-boot:run
-```
+---
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/auth/register` | Register a new user | No |
+| POST | `/api/auth/login` | Login and receive JWT | No |
+| GET | `/api/tasks` | Get all tasks (paginated, filterable) | Yes |
+| GET | `/api/tasks/{id}` | Get a single task | Yes |
+| POST | `/api/tasks` | Create a task | Yes |
+| PUT | `/api/tasks/{id}` | Update a task | Yes |
+| PATCH | `/api/tasks/{id}/complete` | Mark task as complete | Yes |
+| PATCH | `/api/tasks/{id}/priority` | Update task priority | Yes |
+| DELETE | `/api/tasks/{id}` | Delete a task | Yes |
+| GET | `/api/tasks/overdue` | Get overdue tasks | Yes |
 
-### Tasks (Requires Authentication)
-- `GET /api/tasks` - Get all tasks
-- `GET /api/tasks/{id}` - Get task by ID
-- `POST /api/tasks` - Create new task
-- `PUT /api/tasks/{id}` - Update task
-- `DELETE /api/tasks/{id}` - Delete task
-- `PATCH /api/tasks/{id}/complete` - Mark task as completed
-- `GET /api/tasks/priority/{priority}` - Get tasks by priority (LOW/MEDIUM/HIGH)
-- `GET /api/tasks/completed` - Get completed tasks
-- `GET /api/tasks/overdue` - Get overdue tasks
+---
 
-## Sample Requests
+## Running Locally
 
-### Register User
-```json
-POST /api/auth/register
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
+**Prerequisites:** Java 17, Node.js 18+
+
+**Backend**
+```bash
+./mvnw spring-boot:run
+```
+Runs on `http://localhost:8080`  
+H2 console available at `http://localhost:8080/h2-console`
+
+**Frontend**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Runs on `http://localhost:5173`
+
+---
+
+## Project Structure
+
+```
+task-manager-backend/
+  src/                        # Spring Boot application
+    main/java/com/anushka/taskmanager/
+      config/                 # Security and CORS configuration
+      controller/             # REST controllers
+      dto/                    # Request and response DTOs
+      exception/              # Global exception handling
+      model/                  # JPA entities
+      repository/             # Spring Data repositories
+      security/               # JWT filter and user details service
+      service/                # Business logic
+    main/resources/
+      application.properties
+  frontend/                   # React application
+    src/
+      api/                    # Axios instance and API calls
+      components/             # Reusable UI components
+      context/                # Auth context
+      pages/                  # Login, Register, Dashboard
+      types/                  # TypeScript types
+  Dockerfile                  # Docker build for Render deployment
 ```
 
-### Create Task
-```json
-POST /api/tasks
-{
-  "title": "Complete project",
-  "description": "Finish the task manager API",
-  "dueDate": "2026-03-15",
-  "priority": "HIGH",
-  "completed": false
-}
-```
+---
+
+## Notes
+
+- Data resets on every backend restart since H2 is an in-memory database
+- The Render free tier sleeps after 15 minutes of inactivity — the first request after sleep may take around 30 seconds
