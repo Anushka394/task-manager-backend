@@ -30,14 +30,24 @@ export default function TaskCard({ task, onEdit }: Props) {
 
   return (
     <div
-      className={`bg-white rounded-xl border flex flex-col gap-3 p-5 transition-all hover:shadow-md ${
+      className={`rounded-xl border flex flex-col gap-3 p-5 transition-all hover:shadow-md ${
         task.completed
-          ? 'border-slate-100 opacity-60'
+          ? 'bg-white border-slate-100 opacity-60'
           : overdue
-          ? 'border-red-200 bg-red-50/30'
-          : 'border-slate-200'
+          ? 'bg-red-50 border-red-300 shadow-sm shadow-red-100'
+          : 'bg-white border-slate-200'
       }`}
     >
+      {/* Overdue banner strip */}
+      {overdue && (
+        <div className="flex items-center gap-1.5 bg-red-100 border border-red-200 rounded-lg px-3 py-1.5 -mt-1">
+          <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span className="text-xs font-semibold text-red-600">Overdue</span>
+        </div>
+      )}
+
       {/* Top row — title + priority */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
@@ -49,6 +59,8 @@ export default function TaskCard({ task, onEdit }: Props) {
             className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
               task.completed
                 ? 'bg-indigo-500 border-indigo-500'
+                : overdue
+                ? 'border-red-300 hover:border-red-500'
                 : 'border-slate-300 hover:border-indigo-400'
             }`}
           >
@@ -58,7 +70,7 @@ export default function TaskCard({ task, onEdit }: Props) {
               </svg>
             )}
           </button>
-          <h3 className={`font-semibold text-sm text-slate-800 leading-snug ${task.completed ? 'line-through text-slate-400' : ''}`}>
+          <h3 className={`font-semibold text-sm leading-snug ${task.completed ? 'line-through text-slate-400' : overdue ? 'text-red-800' : 'text-slate-800'}`}>
             {task.title}
           </h3>
         </div>
@@ -74,8 +86,13 @@ export default function TaskCard({ task, onEdit }: Props) {
 
       {/* Due date */}
       {task.dueDate && (
-        <p className={`text-xs font-medium pl-7 ${overdue ? 'text-red-500' : 'text-slate-400'}`}>
-          {overdue ? 'Overdue — ' : 'Due '}
+        <p className={`text-xs font-medium pl-7 flex items-center gap-1 ${overdue ? 'text-red-600' : 'text-slate-400'}`}>
+          {overdue && (
+            <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            </svg>
+          )}
+          {overdue ? 'Overdue · ' : 'Due '}
           {new Date(task.dueDate + 'T00:00:00').toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric',
           })}

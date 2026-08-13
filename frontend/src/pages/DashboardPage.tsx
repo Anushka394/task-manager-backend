@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getTasks } from '../api/tasks'
+import { getTasks, getOverdueTasks } from '../api/tasks'
 import Navbar from '../components/Navbar'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
 import type { Task, Priority } from '../types'
 import type { TaskFilters } from '../api/tasks'
 
-type FilterTab = 'all' | 'pending' | 'completed' | 'LOW' | 'MEDIUM' | 'HIGH'
+type FilterTab = 'all' | 'pending' | 'completed' | 'overdue' | 'LOW' | 'MEDIUM' | 'HIGH'
 
 const tabs: { label: string; value: FilterTab }[] = [
   { label: 'All Tasks',  value: 'all' },
   { label: 'Pending',    value: 'pending' },
   { label: 'Completed',  value: 'completed' },
+  { label: '⚠ Overdue', value: 'overdue' },
   { label: 'Low',        value: 'LOW' },
   { label: 'Medium',     value: 'MEDIUM' },
   { label: 'High',       value: 'HIGH' },
@@ -41,14 +42,26 @@ export default function DashboardPage() {
   const [page, setPage]           = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editTask, setEditTask]   = useState<Task | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
   const allQuery       = useQuery({ queryKey: ['tasks', 'all', 0],       queryFn: () => getTasks({ page: 0, size: 1 }) })
   const pendingQuery   = useQuery({ queryKey: ['tasks', 'pending', 0],   queryFn: () => getTasks({ page: 0, size: 1, completed: false }) })
   const completedQuery = useQuery({ queryKey: ['tasks', 'completed', 0], queryFn: () => getTasks({ page: 0, size: 1, completed: true }) })
 
+  const overdueQuery = useQuery({
+    queryKey: ['tasks', 'overdue'],
+    queryFn: getOverdueTasks,
+    staleTime: 60_000,
+  })
+  const overdueTasks = overdueQuery.data ?? []
+  const overdueCount = overdueTasks.length
+
+  const isOverdueTab = activeTab === 'overdue'
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tasks', activeTab, page],
     queryFn:  () => getTasks(buildFilters(activeTab, page)),
+    enabled:  !isOverdueTab,
   })
 
   const handleTabChange = (tab: FilterTab) => { setActiveTab(tab); setPage(0) }
@@ -56,8 +69,9 @@ export default function DashboardPage() {
   const openEdit   = (task: Task) => { setEditTask(task); setModalOpen(true) }
   const closeModal = () => { setModalOpen(false); setEditTask(null) }
 
-  const tasks      = data?.content ?? []
-  const totalPages = data?.totalPages ?? 1
+  // For the overdue tab, use the overdue query results directly
+  const tasks      = isOverdueTab ? overdueTasks : (data?.content ?? [])
+  const totalPages = isOverdueTab ? 1 : (data?.totalPages ?? 1)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -79,11 +93,59 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Overdue alert banner */}
+        {overdueCount > 0 && !bannerDismissed && (
+          <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+            <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-700">
+                You have {overdueCount} overdue {overdueCount === 1 ? 'task' : 'tasks'}
+              </p>
+              <p className="text-xs text-red-500 mt-0.5">
+                {overdueCount === 1
+                  ? 'This task has passed its due date and needs your attention.'
+                  : 'These tasks have passed their due dates and need your attention.'}
+              </p>
+              <button
+                onClick={() => handleTabChange('overdue')}
+                className="mt-2 text-xs font-semibold text-red-600 hover:text-red-800 underline underline-offset-2 transition-colors"
+              >
+                View overdue tasks →
+              </button>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-red-300 hover:text-red-500 transition-colors flex-shrink-0"
+              title="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
           <StatCard label="Total"     value={allQuery.data?.totalElements       ?? 0} accent="text-slate-800" />
           <StatCard label="Pending"   value={pendingQuery.data?.totalElements   ?? 0} accent="text-amber-600" />
           <StatCard label="Completed" value={completedQuery.data?.totalElements ?? 0} accent="text-indigo-600" />
+          <div
+            className={`rounded-xl border px-5 py-4 cursor-pointer transition-all hover:shadow-sm ${
+              overdueCount > 0
+                ? 'bg-red-50 border-red-200 hover:border-red-300'
+                : 'bg-white border-slate-200'
+            }`}
+            onClick={() => overdueCount > 0 && handleTabChange('overdue')}
+            title={overdueCount > 0 ? 'View overdue tasks' : undefined}
+          >
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Overdue</p>
+            <p className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              {overdueCount}
+            </p>
+          </div>
         </div>
 
         {/* Filter tabs */}
@@ -94,17 +156,26 @@ export default function DashboardPage() {
               onClick={() => handleTabChange(t.value)}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === t.value
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? t.value === 'overdue'
+                    ? 'bg-red-500 text-white shadow-sm'
+                    : 'bg-indigo-600 text-white shadow-sm'
+                  : t.value === 'overdue' && overdueCount > 0
+                  ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
               }`}
             >
               {t.label}
+              {t.value === 'overdue' && overdueCount > 0 && activeTab !== 'overdue' && (
+                <span className="ml-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {overdueCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Loading skeleton */}
-        {isLoading && (
+        {(isLoading || (isOverdueTab && overdueQuery.isLoading)) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-36 animate-pulse" />
@@ -113,23 +184,37 @@ export default function DashboardPage() {
         )}
 
         {/* Error */}
-        {isError && (
+        {(isError || (isOverdueTab && overdueQuery.isError)) && (
           <div className="bg-red-50 border border-red-100 rounded-xl px-6 py-5 text-center">
             <p className="text-sm text-red-600">Failed to load tasks. Please try refreshing the page.</p>
           </div>
         )}
 
         {/* Empty state */}
-        {!isLoading && !isError && tasks.length === 0 && (
+        {!(isLoading || (isOverdueTab && overdueQuery.isLoading)) &&
+         !(isError || (isOverdueTab && overdueQuery.isError)) &&
+         tasks.length === 0 && (
           <div className="bg-white rounded-xl border border-slate-200 py-20 text-center">
             <div className="w-12 h-12 bg-slate-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-              <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+              {activeTab === 'overdue' ? (
+                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              )}
             </div>
-            <p className="text-sm font-semibold text-slate-600 mb-1">No tasks found</p>
+            <p className="text-sm font-semibold text-slate-600 mb-1">
+              {activeTab === 'overdue' ? 'No overdue tasks' : 'No tasks found'}
+            </p>
             <p className="text-xs text-slate-400 mb-5">
-              {activeTab === 'all' ? 'Create your first task to get started.' : 'No tasks match this filter.'}
+              {activeTab === 'overdue'
+                ? 'Great work — everything is on track!'
+                : activeTab === 'all'
+                ? 'Create your first task to get started.'
+                : 'No tasks match this filter.'}
             </p>
             {activeTab === 'all' && (
               <button
@@ -143,7 +228,7 @@ export default function DashboardPage() {
         )}
 
         {/* Task grid */}
-        {!isLoading && tasks.length > 0 && (
+        {!(isLoading || (isOverdueTab && overdueQuery.isLoading)) && tasks.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tasks.map((task) => (
               <TaskCard key={task.id} task={task} onEdit={openEdit} />
@@ -151,8 +236,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Pagination — hidden on overdue tab */}
+        {!isOverdueTab && totalPages > 1 && (
           <div className="flex justify-center items-center gap-4 mt-10">
             <button
               onClick={() => setPage((p) => p - 1)}

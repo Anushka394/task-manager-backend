@@ -19,10 +19,11 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 - Create, edit, and delete tasks
 - Set priority levels: Low, Medium, High
 - Set due dates with automatic overdue detection
-- Filter tasks by status (pending / completed) or priority
+- Overdue task notifications — alert banner, navbar badge, overdue filter tab, and highlighted task cards
+- Filter tasks by status (pending / completed), priority, or overdue
 - Mark tasks as complete
 - Paginated task list
-- Dashboard with task count stats
+- Dashboard with task count stats (Total, Pending, Completed, Overdue)
 
 ---
 
@@ -30,20 +31,29 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 
 **Backend**
 - Java 17
-- Spring Boot 3.2
-- Spring Security with JWT (JJWT)
-- Spring Data JPA
+- Spring Boot 3.2.5
+- Spring Security 6 with stateless JWT authentication (JJWT 0.12.5)
+- Spring Data JPA with Hibernate
+- Spring Boot Validation (Jakarta Bean Validation)
+- Spring Boot Actuator (health endpoint)
 - H2 in-memory database
-- Maven
+- Lombok
+- Maven (via Maven Wrapper)
 
 **Frontend**
-- React 19 with TypeScript
-- Vite
-- Tailwind CSS
-- TanStack Query (React Query)
-- React Hook Form with Zod validation
-- Axios
-- React Router
+- React 19 with TypeScript 5.8
+- Vite 6
+- Tailwind CSS 4
+- TanStack Query (React Query) v5 — server state management and caching
+- React Hook Form v7 with Zod v4 — form handling and schema validation
+- @hookform/resolvers — Zod adapter for React Hook Form
+- Axios — HTTP client
+- React Router v7
+
+**Dev / Tooling**
+- ESLint 9 with typescript-eslint and react-hooks plugin
+- @vitejs/plugin-react — Vite React plugin (Babel fast refresh)
+- Docker — containerised backend for deployment
 
 **Deployment**
 - Backend: Render (Docker)
@@ -64,7 +74,7 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 | PATCH | `/api/tasks/{id}/complete` | Mark task as complete | Yes |
 | PATCH | `/api/tasks/{id}/priority` | Update task priority | Yes |
 | DELETE | `/api/tasks/{id}` | Delete a task | Yes |
-| GET | `/api/tasks/overdue` | Get overdue tasks | Yes |
+| GET | `/api/tasks/overdue` | Get all overdue tasks | Yes |
 
 ---
 
@@ -92,26 +102,26 @@ Runs on `http://localhost:5173`
 ## Project Structure
 
 ```
-task-manager-backend/
+task-manager-FS/
   src/                        # Spring Boot application
     main/java/com/anushka/taskmanager/
-      config/                 # Security and CORS configuration
-      controller/             # REST controllers
+      config/                 # Security, CORS, and JPA auditing config
+      controller/             # REST controllers (Auth, Task)
       dto/                    # Request and response DTOs
-      exception/              # Global exception handling
-      model/                  # JPA entities
-      repository/             # Spring Data repositories
-      security/               # JWT filter and user details service
+      exception/              # Global exception handler
+      model/                  # JPA entities (User, Task, Priority)
+      repository/             # Spring Data JPA repositories
+      security/               # JWT filter, JwtService, CustomUserDetailsService
       service/                # Business logic
     main/resources/
       application.properties
   frontend/                   # React application
     src/
-      api/                    # Axios instance and API calls
-      components/             # Reusable UI components
-      context/                # Auth context
-      pages/                  # Login, Register, Dashboard
-      types/                  # TypeScript types
+      api/                    # Axios instance and API call functions
+      components/             # Navbar, TaskCard, TaskModal, PriorityBadge, ProtectedRoute
+      context/                # AuthContext (JWT + user state)
+      pages/                  # LoginPage, RegisterPage, DashboardPage
+      types/                  # Shared TypeScript types
   Dockerfile                  # Docker build for Render deployment
 ```
 
@@ -121,3 +131,4 @@ task-manager-backend/
 
 - Data resets on every backend restart since H2 is an in-memory database
 - The Render free tier sleeps after 15 minutes of inactivity — the first request after sleep may take around 30 seconds
+- JWT is stored in `localStorage`; suitable for development and demos
