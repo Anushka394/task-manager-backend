@@ -2,9 +2,6 @@
 
 A full stack task management application built with Spring Boot and React.
 
-**Live Application:** https://task-manager-backend-one-wheat.vercel.app  
-**API:** https://task-manager-backend-3rq7.onrender.com
-
 ---
 
 ## Overview
@@ -36,7 +33,7 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 - Spring Data JPA with Hibernate
 - Spring Boot Validation (Jakarta Bean Validation)
 - Spring Boot Actuator (health endpoint)
-- H2 in-memory database
+- MySQL
 - Lombok
 - Maven (via Maven Wrapper)
 
@@ -53,11 +50,6 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 **Dev / Tooling**
 - ESLint 9 with typescript-eslint and react-hooks plugin
 - @vitejs/plugin-react — Vite React plugin (Babel fast refresh)
-- Docker — containerised backend for deployment
-
-**Deployment**
-- Backend: Render (Docker)
-- Frontend: Vercel
 
 ---
 
@@ -80,14 +72,32 @@ Users can register an account, log in, and manage their personal tasks. Each tas
 
 ## Running Locally
 
-**Prerequisites:** Java 17, Node.js 18+
+**Prerequisites:** Java 17, Node.js 18+, MySQL
+
+**Database setup**
+
+Create a MySQL database:
+```sql
+CREATE DATABASE task_manager;
+```
+
+Update `src/main/resources/application.properties` with your MySQL credentials:
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/task_manager?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=your_password
+```
 
 **Backend**
 ```bash
 ./mvnw spring-boot:run
 ```
-Runs on `http://localhost:8080`  
-H2 console available at `http://localhost:8080/h2-console`
+Runs on `http://localhost:8080`
+
+On Windows (PowerShell):
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
 **Frontend**
 ```bash
@@ -122,13 +132,12 @@ task-manager-FS/
       context/                # AuthContext (JWT + user state)
       pages/                  # LoginPage, RegisterPage, DashboardPage
       types/                  # Shared TypeScript types
-  Dockerfile                  # Docker build for Render deployment
 ```
 
 ---
 
 ## Notes
 
-- Data resets on every backend restart since H2 is an in-memory database
-- The Render free tier sleeps after 15 minutes of inactivity — the first request after sleep may take around 30 seconds
+- Hibernate automatically creates and updates tables on startup (`ddl-auto=update`)
 - JWT is stored in `localStorage`; suitable for development and demos
+- The Vite dev server proxies `/api` requests to `http://localhost:8080` automatically
