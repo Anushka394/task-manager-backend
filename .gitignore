@@ -44,3 +44,6 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/.env*.local
+
+### Nested duplicate project folder ###
+task-manager-FS/

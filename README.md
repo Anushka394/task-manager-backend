@@ -9,7 +9,7 @@ A full stack task management application built with Spring Boot and React.
 
 ## Overview
 
-Users can register an account, log in, and manage their personal tasks. Each task supports a title, description, due date, and priority level. The application is secured with JWT authentication — every user only sees and manages their own tasks.
+Users can register an account, login, and manage their personal tasks. Each task supports a title, description, due date, and priority level. The application is secured with JWT authentication — every user only sees and manages their own tasks.
 
 ---
 
